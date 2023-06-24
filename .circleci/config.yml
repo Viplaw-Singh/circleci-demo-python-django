@@ -24,7 +24,7 @@ jobs:
 
       - restore_cache:
           name: Restore project's cache
-          key: py_cache-v2-{{ checksum "requirements.txt" }}-{{ checksum "combined-runtime.txt" }}
+          key: py_cache-v2-{{ checksum "requirements.txt" }}
 
       - python/install-packages:
           pkg-manager: pipenv
@@ -39,7 +39,7 @@ jobs:
              pipenv run python manage.py test # alternatively run `python -m pytest` if you are running vanilla pytest
              #pipenv run coverage run manage.py test 
       - save_cache:
-          key: py_cache-v2-{{ checksum "requirements.txt" }}-{{ checksum "combined-runtime.txt" }}
+          key: py_cache-v2-{{ checksum "requirements.txt" }}
           paths:
             - /home/circleci/py_cache       
       - store_test_results:
