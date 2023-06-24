@@ -4,6 +4,7 @@ from django.test import TestCase
 
 import datetime
 import unittest
+import xmlrunner
 from django.utils import timezone
 from catalog.forms import RenewBookForm
 
