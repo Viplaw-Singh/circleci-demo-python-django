@@ -21,6 +21,7 @@ jobs:
           command: |
              pip install coverage
              pip install django
+             pip install dj_database_url
              pipenv run python manage.py test
              coverage run manage.py test
              # alternatively run `python -m pytest` if you are running vanilla pytest
