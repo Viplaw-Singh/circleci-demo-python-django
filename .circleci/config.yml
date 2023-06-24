@@ -9,7 +9,7 @@ executors:
       - image: cimg/python:3.10.1
         environment:
           DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
-      - image: cimg/postgres:15.3.0
+      - image: cimg/postgres:9.6.2
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
