@@ -33,6 +33,9 @@ jobs:
       - run:
           name: Run tests
           command: |
+             pip install --upgrade pip
+             pip install pytest-cov
+             pip install --upgrade setuptools
              # get test files while ignoring __init__ files
              TESTFILES=$(circleci tests glob "catalog/tests/*.py" | sed 's/\S\+__init__.py//g')
              echo $TESTFILES | tr ' ' '\n' | sort | uniq > circleci_test_files.txt
