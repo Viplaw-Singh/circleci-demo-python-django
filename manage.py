@@ -4,7 +4,6 @@ import sys
 import xmlrunner
 import unittest
 if __name__ == "__main__":
-    unittest.main(testRunner=xmlrunner.XMLTestRunner(output='test-reports'))
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "locallibrary.settings")
     try:
         from django.core.management import execute_from_command_line
