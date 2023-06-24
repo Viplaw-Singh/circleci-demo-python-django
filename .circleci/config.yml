@@ -44,7 +44,7 @@ jobs:
              # massage filepaths into format manage.py test accepts
              TESTFILES=$(echo $TESTFILES | tr "/" "." | sed 's/\.py$//g')
              echo $TESTFILES 
-             pipenv run python manage.py test --verbosity=2 $TESTFILES
+             pipenv run python manage.py test $TESTFILES
       - save_cache:
           key: py_cache-v2-{{ checksum "requirements.txt" }}
           paths:
