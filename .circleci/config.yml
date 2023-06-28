@@ -1,5 +1,5 @@
 version: 2.1
-setup: true
+
 orbs:
   python: circleci/python@1.5.0
   heroku: circleci/heroku@1.2.6
@@ -93,6 +93,10 @@ workflows:
       - build_and_test:
             requires:
               - prepare-dependencies
+            filters:
+                branches:
+                 only:
+                   - master
       # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
       # The following code may be uncommented, onnce HEROKU_API_KEY & HEROKU_APP_NAME environemnt variables are present
       # Read more: https://circleci.com/docs/2.0/env-vars/
@@ -103,3 +107,6 @@ workflows:
       #       branches:
       #         only: master # only deploy when on main/master
   
+  
+      #       branches:
+      #         only: master # only deploy when on main/master
