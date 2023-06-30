@@ -15,41 +15,44 @@ executors:
           POSTGRES_DB: circle_test
           
 jobs:
+  install_dep:
+    executor: my-executor
+    resource_class: medium
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pipenv
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .    
   build_and_test: # this can be any name you choose
     executor: my-executor
     resource_class: medium
-    parallelism: 2
+    #parallelism: 2
     steps:
       - checkout
-      #- setup_remote_docker:
-          #docker_layer_caching: true
-
-      - restore_cache:
-          name: Restore project's cache
-          key: py_cache-v2-{{ checksum "requirements.txt" }}
-
-      - python/install-packages:
-          pkg-manager: pipenv
+     
+       - attach_workspace:
+          at: ~/project
+      
       - run:
           name: Run tests
           command: |
-             pip install --upgrade pip
-             pip install pytest-cov
-             pip install --upgrade setuptools
+             #pip install --upgrade pip
+             #pip install pytest-cov
+             #pip install --upgrade setuptools
              # get test files while ignoring __init__ files
-             TESTFILES=$(circleci tests glob "catalog/tests/*.py" | sed 's/\S\+__init__.py//g')
-             echo $TESTFILES | tr ' ' '\n' | sort | uniq > circleci_test_files.txt
-             cat circleci_test_files.txt
-             TESTFILES=$(circleci tests split --split-by=timings circleci_test_files.txt)
+             #TESTFILES=$(circleci tests glob "catalog/tests/*.py" | sed 's/\S\+__init__.py//g')
+             #echo $TESTFILES | tr ' ' '\n' | sort | uniq > circleci_test_files.txt
+             #cat circleci_test_files.txt
+             #TESTFILES=$(circleci tests split --split-by=timings circleci_test_files.txt)
              # massage filepaths into format manage.py test accepts
-             TESTFILES=$(echo $TESTFILES | tr "/" "." | sed 's/\.py$//g')
-             echo $TESTFILES 
-             pipenv run python -m unittest manage.py test $TESTFILES
-             #pipenv run python manage.py test
-      - save_cache:
-          key: py_cache-v2-{{ checksum "requirements.txt" }}
-          paths:
-            - /home/circleci/py_cache       
+             #TESTFILES=$(echo $TESTFILES | tr "/" "." | sed 's/\.py$//g')
+             #echo $TESTFILES 
+             #pipenv run python manage.py test $TESTFILES
+             pipenv run python manage.py test
+            
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -73,6 +76,8 @@ workflows:
   on_commit:
     jobs:
       - build_and_test
+          requires:
+            - install_dep
       # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
       # The following code may be uncommented, onnce HEROKU_API_KEY & HEROKU_APP_NAME environemnt variables are present
       # Read more: https://circleci.com/docs/2.0/env-vars/
