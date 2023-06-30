@@ -8,6 +8,8 @@ import xmlrunner
 from django.utils import timezone
 from catalog.forms import RenewBookForm
 from catalog.tests import test_forms
+from catalog.tests import test_models
+from catalog.tests import test_views
 
 class RenewBookFormTest(TestCase):
 
