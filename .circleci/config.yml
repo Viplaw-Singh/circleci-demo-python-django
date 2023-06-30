@@ -33,7 +33,7 @@ jobs:
     steps:
       - checkout
      
-       - attach_workspace:
+      - attach_workspace:
           at: ~/project
       
       - run:
@@ -75,7 +75,7 @@ jobs:
 workflows:
   on_commit:
     jobs:
-      - build_and_test
+      - build_and_test:
           requires:
             - install_dep
       # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
