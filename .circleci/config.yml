@@ -1,34 +1,7 @@
 version: 2.1
-setup: true
 orbs:
   python: circleci/python@1.5.0
   heroku: circleci/heroku@1.2.6
-
-commands:
-  restore_cache_cmd:
-    steps:
-      - restore_cache:
-          name: Restore project's cache
-          key: 
-            -py_cache-v2-{{ checksum "requirements.txt" }}
-            -py_cache-v2-
-
-  save_cache_cmd:
-    steps:
-      - save_cache:
-          name: "save cahce"
-          key: py_cache-v2-{{ checksum "requirements.txt" }}
-          paths:
-            - /home/circleci/py_cache            
-
-  build:
-    steps:
-      - checkout
-      - restore_cache_cmd
-      - python/install-packages:
-          pkg-manager: pipenv
-      - save_cache_cmd
-
 
 executors:
   my-executor:
@@ -42,57 +15,64 @@ executors:
           POSTGRES_DB: circle_test
           
 jobs:
-  prepare-dependencies:
-    executor: my-executor
-    resource_class: medium
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - python-deps-{{ checksum "requirements.txt" }}
-            - python-deps
-      - build
-      - save_cache:
-         key: python-deps-{{ checksum "requirements.txt" }}
-         paths:
-            - ~/.cache/pip
-      - persist_to_workspace:
-          root: .
-          paths:
-              - .
-  
   build_and_test: # this can be any name you choose
     executor: my-executor
     resource_class: medium
-    #parallelism: 2
+    parallelism: 2
     steps:
-      #- build
-      - attach_workspace:
-          at: .
+      - checkout
+      #- setup_remote_docker:
+          #docker_layer_caching: true
+
+      - restore_cache:
+          name: Restore project's cache
+          key: py_cache-v2-{{ checksum "requirements.txt" }}
+
+      - python/install-packages:
+          pkg-manager: pipenv
       - run:
           name: Run tests
           command: |
-             pipenv run python manage.py test
-      - persist_to_workspace:
-          root: .
+             pip install --upgrade pip
+             pip install pytest-cov
+             pip install --upgrade setuptools
+             # get test files while ignoring __init__ files
+             TESTFILES=$(circleci tests glob "catalog/tests/*.py" | sed 's/\S\+__init__.py//g')
+             echo $TESTFILES | tr ' ' '\n' | sort | uniq > circleci_test_files.txt
+             cat circleci_test_files.txt
+             TESTFILES=$(circleci tests split --split-by=timings circleci_test_files.txt)
+             # massage filepaths into format manage.py test accepts
+             TESTFILES=$(echo $TESTFILES | tr "/" "." | sed 's/\.py$//g')
+             echo $TESTFILES 
+             pipenv run python manage.py test $TESTFILES
+             #pipenv run python manage.py test
+      - save_cache:
+          key: py_cache-v2-{{ checksum "requirements.txt" }}
           paths:
-              - .
+            - /home/circleci/py_cache       
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: tr1
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
  
   deploy: # this can be any name you choose
     docker:
       - image: cimg/python:3.10.1
     steps:
-      - build
+      - attach_workspace:
+          at: ~/project
       - heroku/deploy-via-git: 
           force: true # force push when pushing to the heroku remote, see: https://devcenter.heroku.com/articles/git
 
 workflows:
   on_commit:
     jobs:
-      - prepare-dependencies
-      - build_and_test:
-            requires:
-              - prepare-dependencies
+      - build_and_test
       # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
       # The following code may be uncommented, onnce HEROKU_API_KEY & HEROKU_APP_NAME environemnt variables are present
       # Read more: https://circleci.com/docs/2.0/env-vars/
@@ -102,4 +82,22 @@ workflows:
       #     filters:
       #       branches:
       #         only: master # only deploy when on main/master
-  
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"       
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build_and_test
+      # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
+      # The following code may be uncommented, onnce HEROKU_API_KEY & HEROKU_APP_NAME environemnt variables are present
+      # Read more: https://circleci.com/docs/2.0/env-vars/
+      # - deploy:
+      #     requires:
+      #       - build_and_test # only deploy if the build_and_test job has completed
+      #     filters:
+      #       branches:
+      #         only: master # only deploy when on main/master
