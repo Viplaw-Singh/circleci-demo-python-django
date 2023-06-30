@@ -5,6 +5,7 @@ from django.test import TestCase
 from catalog.models import Author
 import unittest
 import xmlrunner
+from catalog.tests import test_models
 class AuthorModelTest(TestCase):
 
     @classmethod
