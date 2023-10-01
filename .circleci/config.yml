@@ -1,7 +1,4 @@
 version: 2.1
-orbs:
-  python: circleci/python@1.5.0
-  heroku: circleci/heroku@1.2.6
 
 executors:
   my-executor:
@@ -13,96 +10,72 @@ executors:
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
-          
+
 jobs:
   install_dep:
-    executor: my-executor
+    docker:
+      - image: cimg/python:3.10.1
     resource_class: medium
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pipenv
+      - run:
+          name: Install Dependencies
+          command: |
+            pip install --upgrade pip
+            pip install pipenv
+            pipenv install --dev
+            pipenv run python manage.py migrate
+          environment:
+            DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
       - persist_to_workspace:
           root: ~/project
           paths:
-            - .    
-  build_and_test: # this can be any name you choose
-    executor: my-executor
+            - .
+
+  build_and_test:
+    docker:
+      - image: cimg/python:3.10.1
     resource_class: medium
-    #parallelism: 2
     steps:
-      - checkout
-     
       - attach_workspace:
           at: ~/project
-      
       - run:
-          name: Run tests
+          name: Run Tests
           command: |
-             #pip install --upgrade pip
-             #pip install pytest-cov
-             #pip install --upgrade setuptools
-             # get test files while ignoring __init__ files
-             #TESTFILES=$(circleci tests glob "catalog/tests/*.py" | sed 's/\S\+__init__.py//g')
-             #echo $TESTFILES | tr ' ' '\n' | sort | uniq > circleci_test_files.txt
-             #cat circleci_test_files.txt
-             #TESTFILES=$(circleci tests split --split-by=timings circleci_test_files.txt)
-             # massage filepaths into format manage.py test accepts
-             #TESTFILES=$(echo $TESTFILES | tr "/" "." | sed 's/\.py$//g')
-             #echo $TESTFILES 
-             #pipenv run python manage.py test $TESTFILES
-             pipenv run python manage.py test
-            
+            pip install --upgrade pip
+            pipenv run pytest
+          environment:
+            DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
           destination: tr1
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - .
- 
-  deploy: # this can be any name you choose
+
+  tag:
     docker:
       - image: cimg/python:3.10.1
     steps:
-      - attach_workspace:
-          at: ~/project
-      - heroku/deploy-via-git: 
-          force: true # force push when pushing to the heroku remote, see: https://devcenter.heroku.com/articles/git
+      - checkout
+      - run:
+          name: Create Git Tag
+          command: |
+            git tag -a "v1.0.${CIRCLE_BUILD_NUM}" -m "Version 1.0.${CIRCLE_BUILD_NUM}" ${CIRCLE_SHA1}
+            git push origin "v1.0.${CIRCLE_BUILD_NUM}"
 
 workflows:
+  version: 2
   on_commit:
     jobs:
+      - install_dep
       - build_and_test:
           requires:
             - install_dep
-      # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
-      # The following code may be uncommented, onnce HEROKU_API_KEY & HEROKU_APP_NAME environemnt variables are present
-      # Read more: https://circleci.com/docs/2.0/env-vars/
-      # - deploy:
-      #     requires:
-      #       - build_and_test # only deploy if the build_and_test job has completed
-      #     filters:
-      #       branches:
-      #         only: master # only deploy when on main/master
-  nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"       
+      
+      - tag:
+          requires:
+            - build_and_test
           filters:
             branches:
-              only:
-                - master
-    jobs:
-      - build_and_test
-      # Follow instructions here to authenticate git for Heroku: https://devcenter.heroku.com/articles/git#http-git-authentication
-      # The following code may be uncommented, onnce HEROKU_API_KEY & HEROKU_APP_NAME environemnt variables are present
-      # Read more: https://circleci.com/docs/2.0/env-vars/
-      # - deploy:
-      #     requires:
-      #       - build_and_test # only deploy if the build_and_test job has completed
-      #     filters:
-      #       branches:
-      #         only: master # only deploy when on main/master
+              only: master
+
