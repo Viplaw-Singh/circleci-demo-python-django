@@ -26,7 +26,10 @@ jobs:
             pipenv install --dev
             pipenv run python manage.py migrate
           environment:
-            DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
+            DATABASE_URL: postgresql://postgres@localhost/circle_test?sslmode=disable
+            DATABASE_HOST: 5432
+            DATABASE_USER: postgres
+            DATABASE_NAME: circle_test
       - persist_to_workspace:
           root: ~/project
           paths:
@@ -43,6 +46,7 @@ jobs:
           name: Run Tests
           command: |
             pip install --upgrade pip
+            pip install xmlrunner
             pipenv run pytest
           environment:
             DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
