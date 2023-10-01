@@ -1,7 +1,7 @@
 version: 2.1
 
-executors:
-  my-executor:
+jobs:
+  install_dep:
     docker:
       - image: cimg/python:3.10.1
         environment:
@@ -10,11 +10,6 @@ executors:
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
-
-jobs:
-  install_dep:
-    docker:
-      - image: cimg/python:3.10.1
     resource_class: medium
     steps:
       - checkout
@@ -25,11 +20,6 @@ jobs:
             pip install pipenv
             pipenv install --dev
             pipenv run python manage.py migrate
-          environment:
-            DATABASE_URL: postgresql://postgres@localhost/circle_test?sslmode=disable
-            DATABASE_HOST: 5432
-            DATABASE_USER: postgres
-            DATABASE_NAME: circle_test
       - persist_to_workspace:
           root: ~/project
           paths:
