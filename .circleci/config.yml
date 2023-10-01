@@ -37,6 +37,7 @@ jobs:
           command: |
             pip install --upgrade pip
             pip install xmlrunner
+            pipenv install --dev pytest
             pipenv run pytest
           environment:
             DATABASE_URL: postgresql://root@localhost/circle_test?sslmode=disable
